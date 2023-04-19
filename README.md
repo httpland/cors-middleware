@@ -36,6 +36,9 @@ This project provides middleware for CORS requests.
 
 Add a CORS header to the response in the downstream.
 
+No special action is taken in response to CORS preflight requests. Use
+[preflight](#cors-preflight-request) for that.
+
 ```ts
 import {
   cors,
@@ -159,9 +162,7 @@ import {
 } from "https://deno.land/x/cors_middleware@$VERSION/middleware.ts";
 import { assertThrows } from "https://deno.land/std/testing/asserts.ts";
 
-const middleware = assertThrows(() =>
-  cors({ exposeHeaders: ["<invalid:field-name>"] })
-);
+assertThrows(() => cors({ exposeHeaders: ["<invalid:field-name>"] }));
 ```
 
 ## CORS preflight request
@@ -293,10 +294,53 @@ The default is
 You can change to
 [200 OK](https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.1).
 
+### Serialization error
+
+Throws an error if option has an invalid value.
+
+This is following case:
+
+- Elements of [`allowMethods`](#allowmethods) are not
+  [`<method>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1-4) format
+- Elements of [`allowHeaders`](#allowheaders) are not
+  [`<field-name>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1-2)
+  format
+- `maxAge` is not non-negative integer
+
+```ts
+import {
+  preflight,
+} from "https://deno.land/x/cors_middleware@$VERSION/middleware.ts";
+import { assertThrows } from "https://deno.land/std/testing/asserts.ts";
+
+assertThrows(() => preflight({ allowMethods: ["<invalid:method>"] }));
+assertThrows(() => preflight({ allowHeaders: ["<invalid:field-name>"] }));
+assertThrows(() => preflight({ maxAge: NaN }));
+```
+
 ## API
 
 All APIs can be found in the
 [deno doc](https://doc.deno.land/https/deno.land/x/cors_middleware/mod.ts).
+
+## FAQ
+
+<details>
+
+<summary>Why are there two separate modules?</summary>
+
+Because the two offer different functions. [cors](#cors-request) creates
+middleware to provide CORS headers.
+
+On the other hand, [preflight](#cors-preflight-request) creates a handler for
+CORS preflight requests. (Although it is actually a middleware signature, since
+it transfers processing to subsequent requests other than CORS preflight
+requests.)
+
+Mixing middleware with handler characteristics and middleware characteristics
+will create expressive constraints.
+
+</details>
 
 ## License
 
