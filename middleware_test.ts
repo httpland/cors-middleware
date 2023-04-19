@@ -1,13 +1,16 @@
-import { _cors, cors } from "./middleware.ts";
+import { _cors, _preflight, cors, preflight } from "./middleware.ts";
 import {
   assert,
   assertIsError,
+  assertSpyCalls,
   CORSHeader,
   describe,
   equalsResponse,
   Header,
   it,
   Method,
+  spy,
+  Status,
 } from "./_dev_deps.ts";
 
 const ORIGIN = "http://test.example";
@@ -373,5 +376,200 @@ describe("cors", () => {
         `exposeHeaders[0] is invalid <field-name> format. ""`,
       );
     }
+  });
+});
+
+const vary = [
+  Header.Origin,
+  CORSHeader.AccessControlRequestMethod,
+  CORSHeader.AccessControlRequestHeaders,
+].join(", ");
+const REQUEST_HEADERS = "content-type";
+const REQUEST_METHOD = "POST";
+
+describe("_preflight", () => {
+  it("should return same response if the request is not preflight", async () => {
+    const initResponse = new Response();
+    const response = await _preflight(
+      {},
+      new Request("test:"),
+      () => initResponse,
+    );
+
+    assert(response === initResponse);
+  });
+
+  it("should return same response with vary if the request is OPTIONS method", async () => {
+    const response = await _preflight(
+      {},
+      new Request("test:", { method: Method.Options }),
+      () => new Response(),
+    );
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          headers: { [Header.Vary]: vary },
+        }),
+        true,
+      ),
+    );
+  });
+
+  it("should return merged same response if the request is OPTIONS method and the response include field value", async () => {
+    const response = await _preflight(
+      {},
+      new Request("test:", { method: Method.Options }),
+      () =>
+        new Response(null, {
+          headers: { [Header.Vary]: "x-test, origin", "x-test": "test" },
+        }),
+    );
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          headers: {
+            [Header.Vary]: "x-test, " + vary,
+            "x-test": "test",
+          },
+        }),
+        true,
+      ),
+    );
+  });
+
+  it("should return preflight response if the request is preflight request", async () => {
+    const REQUEST_HEADERS = "content-type";
+    const REQUEST_METHOD = "POST";
+    const response = await _preflight(
+      {},
+      new Request("test:", {
+        method: Method.Options,
+        headers: {
+          [Header.Origin]: ORIGIN,
+          [CORSHeader.AccessControlRequestMethod]: REQUEST_METHOD,
+          [CORSHeader.AccessControlRequestHeaders]: REQUEST_HEADERS,
+        },
+      }),
+      () => new Response(),
+    );
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          status: Status.NoContent,
+          headers: {
+            [Header.Vary]: vary,
+            [CORSHeader.AccessControlAllowOrigin]: "*",
+            [CORSHeader.AccessControlAllowHeaders]: REQUEST_HEADERS,
+            [CORSHeader.AccessControlAllowMethods]: REQUEST_METHOD,
+          },
+        }),
+        true,
+      ),
+    );
+  });
+
+  it("should return preflight response if the request is preflight request", async () => {
+    const response = await _preflight(
+      {
+        allowCredentials: "true",
+        status: 200,
+        maxAge: "0",
+        matchOrigin: () => true,
+        allowHeaders: "x-header",
+        allowMethods: "x-method",
+      },
+      preflightRequest,
+      () => new Response(),
+    );
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          headers: {
+            [Header.Vary]: vary,
+            [CORSHeader.AccessControlAllowOrigin]: ORIGIN,
+            [CORSHeader.AccessControlAllowHeaders]: "x-header",
+            [CORSHeader.AccessControlAllowMethods]: "x-method",
+            [CORSHeader.AccessControlMaxAge]: "0",
+            [CORSHeader.AccessControlAllowCredentials]: "true",
+          },
+        }),
+        true,
+      ),
+    );
+  });
+});
+
+const preflightRequest = new Request("test:", {
+  method: Method.Options,
+  headers: {
+    [Header.Origin]: ORIGIN,
+    [CORSHeader.AccessControlRequestMethod]: REQUEST_METHOD,
+    [CORSHeader.AccessControlRequestHeaders]: REQUEST_HEADERS,
+  },
+});
+
+describe("preflight", () => {
+  it("should return preflight response", async () => {
+    const middleware = preflight();
+    const handler = spy(() => new Response());
+    const response = await middleware(preflightRequest, handler);
+
+    assertSpyCalls(handler, 0);
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          status: Status.NoContent,
+          headers: {
+            [Header.Vary]: vary,
+            [CORSHeader.AccessControlAllowOrigin]: "*",
+            [CORSHeader.AccessControlAllowHeaders]: REQUEST_HEADERS,
+            [CORSHeader.AccessControlAllowMethods]: REQUEST_METHOD,
+          },
+        }),
+        true,
+      ),
+    );
+  });
+
+  it("should custom preflight response", async () => {
+    const middleware = preflight({
+      allowCredentials: true,
+      allowHeaders: ["x-test", "x-test2"],
+      allowMethods: ["POST", "PUT"],
+      allowOrigins: [/^https/],
+      maxAge: 86400,
+      status: Status.OK,
+    });
+    const handler = spy(() => new Response());
+    const response = await middleware(preflightRequest, handler);
+
+    assertSpyCalls(handler, 0);
+
+    assert(
+      await equalsResponse(
+        response,
+        new Response(null, {
+          headers: {
+            [Header.Vary]: vary,
+            [CORSHeader.AccessControlAllowOrigin]: "",
+            [CORSHeader.AccessControlAllowHeaders]: "x-test, x-test2",
+            [CORSHeader.AccessControlAllowMethods]: "POST, PUT",
+            [CORSHeader.AccessControlAllowCredentials]: "true",
+            [CORSHeader.AccessControlMaxAge]: "86400",
+          },
+        }),
+        true,
+      ),
+    );
   });
 });

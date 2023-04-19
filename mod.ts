@@ -6,4 +6,6 @@ export {
   type CORSOptions,
   type CORSPreflightResponseHeaders,
   type CORSResponseHeaders,
+  preflight,
+  type PreflightOptions,
 } from "./middleware.ts";

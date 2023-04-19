@@ -8,6 +8,7 @@ export {
   type Handler,
   type Middleware,
 } from "https://deno.land/x/http_middleware@1.0.0/mod.ts";
+export { Status } from "https://deno.land/std@0.184.0/http/http_status.ts";
 export { append } from "https://deno.land/x/vary@1.0.0/mod.ts";
 
 const ACCESS_CONTROL = "access-control";

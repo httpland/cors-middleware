@@ -3,8 +3,11 @@ import {
   CORSHeader,
   createResponse,
   type Handler,
+  isString,
   mergeHeaders,
+  Method,
   type Middleware,
+  Status,
 } from "./deps.ts";
 import {
   assertFieldNameFormat,
@@ -124,4 +127,108 @@ export function getAllowedOrigin(
   if (!check) return Char.Star;
 
   return check(origin) ? origin : "";
+}
+
+export interface PreflightOptions extends CORSPreflightResponseHeaders {
+  /** Preflight response status code.
+   * @default 204
+   */
+  readonly status?: Status.OK | Status.NoContent;
+}
+
+/** Create middleware for CORS preflight request.
+ */
+export function preflight(options: PreflightOptions = {}): Middleware {
+  const {
+    allowOrigins = Char.Star,
+    allowCredentials,
+    allowHeaders,
+    allowMethods,
+    maxAge,
+    status = Status.NoContent,
+  } = options;
+  const allowHeadersValue = allowHeaders?.join(Char.Separator);
+  const allowMethodsValue = allowMethods?.join(Char.Separator);
+  const matchOrigin = allowOrigins === Char.Star
+    ? undefined
+    : createOriginMatcher(allowOrigins);
+
+  return _preflight.bind(null, {
+    status,
+    maxAge: maxAge?.toString(),
+    allowCredentials: allowCredentials?.toString(),
+    matchOrigin,
+    allowHeaders: allowHeadersValue,
+    allowMethods: allowMethodsValue,
+  });
+}
+
+const varyCandidates = [
+  Header.Origin,
+  CORSHeader.AccessControlRequestMethod,
+  CORSHeader.AccessControlRequestHeaders,
+];
+
+export async function _preflight(
+  context: Readonly<
+    & {
+      [k in keyof Omit<CORSPreflightResponseHeaders, "allowOrigins">]?: string;
+    }
+    & { matchOrigin?: (origin: string) => boolean }
+    & { status?: Status.OK | Status.NoContent }
+  >,
+  request: Request,
+  next: Handler,
+): Promise<Response> {
+  if (request.method !== Method.Options) return next(request);
+
+  if (!isCORSPreflightRequest(request)) {
+    const response = await next(request);
+    const varyValue = response.headers.get(Header.Vary) ?? "";
+    const finalVary = append(varyValue, varyCandidates);
+
+    const headers = mergeHeaders(
+      response.headers,
+      new Headers({ [Header.Vary]: finalVary }),
+    );
+
+    return createResponse(response, { headers });
+  }
+
+  const {
+    allowHeaders,
+    matchOrigin,
+    allowMethods,
+    allowCredentials,
+    maxAge,
+    status = Status.NoContent,
+  } = context;
+  const origin = request.headers.get(Header.Origin)!;
+  const headers = new Headers([
+    [
+      CORSHeader.AccessControlAllowOrigin,
+      getAllowedOrigin(origin, matchOrigin),
+    ],
+    [
+      CORSHeader.AccessControlAllowHeaders,
+      allowHeaders ??
+        request.headers.get(CORSHeader.AccessControlRequestHeaders)!,
+    ],
+    [
+      CORSHeader.AccessControlAllowMethods,
+      allowMethods ??
+        request.headers.get(CORSHeader.AccessControlRequestMethod)!,
+    ],
+    [Header.Vary, varyCandidates.join(Char.Separator)],
+  ]);
+
+  if (isString(maxAge)) {
+    headers.set(CORSHeader.AccessControlMaxAge, maxAge);
+  }
+
+  if (isString(allowCredentials)) {
+    headers.set(CORSHeader.AccessControlAllowCredentials, allowCredentials);
+  }
+
+  return new Response(null, { status, headers });
 }
