@@ -165,6 +165,16 @@ import { assertThrows } from "https://deno.land/std/testing/asserts.ts";
 assertThrows(() => cors({ exposeHeaders: ["<invalid:field-name>"] }));
 ```
 
+### Effects
+
+Middleware may make changes to the following elements of the HTTP message.
+
+- HTTP Headers
+  - Access-Control-Allow-Origin
+  - Access-Control-Allow-Credentials
+  - Access-Control-Expose-Headers
+  - Vary
+
 ## CORS preflight request
 
 Create CORS preflight request handler.
