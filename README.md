@@ -14,23 +14,26 @@ HTTP cross-origin resource sharing(CORS) middleware.
 Compliant with
 [Fetch living standard, 3.2. CORS protocol](https://fetch.spec.whatwg.org/#http-cors-protocol).
 
+## Terms
+
+<dl>
+  <dt>CORS request</dt>
+  <dd>A request with <code>Origin</code> header</dd>
+
+<dt>CORS preflight request</dt>
+  <dd>A CORS request and satisfies the following:
+    <ul>
+      <li>Method is <code>Options</code></li>
+      <li>Includes <code>Access-Control-Request-Method</code> header</li>
+      <li>Includes <code>Access-Control-Request-Headers</code> header</li>
+    </ul>
+  </dd>
+</dl>
+
 ## Middleware
 
 For a definition of Universal HTTP middleware, see the
 [http-middleware](https://github.com/httpland/http-middleware) project.
-
-## CORS request and CORS preflight request
-
-A CORS request is a request with an `Origin` header.
-
-On the other hand, a CORS preflight request is a CORS request and satisfies the
-following:
-
-- Method is `Options`
-- Includes `Access-Control-Request-Method` header
-- Includes `Access-Control-Request-Headers` header
-
-This project provides middleware for CORS requests.
 
 ## CORS request
 
@@ -66,6 +69,8 @@ Vary: Origin
 
 ### CORS request options
 
+`cors` accept following options:
+
 | Name             | Type                                     | Description                        |
 | ---------------- | ---------------------------------------- | ---------------------------------- |
 | allowOrigins     | `*` &#124; (`string` &#124; `RegExp` )[] | Allowed origin list.               |
@@ -74,20 +79,24 @@ Vary: Origin
 
 #### AllowOrigins
 
-`allowOrigins` is a list of `*` or allowed origins.
+`allowOrigins` is `*` or a list of allowed origins.
 
 The default is `*`.
 
-If `*`, ACAO(*) is added to the response.
+##### Asterisk
+
+If `*`, `Access-Control-Allow-Origin`(*) will add to the response.
+
+##### List
 
 The list may consist of strings or regular expression objects.
 
-The middleware compares the value of the `Origin` header with the
-`allowOrigins`.
+The middleware compares `Origin` header and each element of the `allowOrigins`.
 
-If a match is found, ACAM(`Origin`) is added to the response.
+If matched, `Access-Control-Allow-Origin`(Origin header) will add to the
+response.
 
-If no match, ACAM(`""`) is added to the response.
+If no match, `Access-Control-Allow-Origin`(null) will add to the response.
 
 ```ts
 import {
@@ -100,10 +109,17 @@ const middleware = cors({
 });
 ```
 
+yield:
+
+```http
+Access-Control-Allow-Origin: <Origin>
+Vary: Origin
+```
+
 #### AllowCredentials
 
-The `allowCredentials` value will serialize and added to the response as an ACAC
-(`Access-Control-Allow-Credentials`) header.
+The `allowCredentials` value will serialize and added to the response as
+`Access-Control-Allow-Credentials` header.
 
 ```ts
 import {
@@ -123,12 +139,10 @@ Vary: Origin
 
 #### ExposeHeaders
 
-The value of `exposeHeaders` will serialize and added to the response as an ACEH
-(`Access-Control-Expose-Headers`) header.
+The value of `exposeHeaders` will serialize and added to the response as an
+`Access-Control-Expose-Headers` header.
 
-However, if the request is a
-[CORS preflight request](#cors-request-and-cors-preflight-request), it is not
-added.
+However, if the request is a [CORS preflight request](#terms), it is not added.
 
 ```ts
 import {
@@ -167,7 +181,7 @@ assertThrows(() => cors({ exposeHeaders: ["<invalid:field-name>"] }));
 
 ### Effects
 
-Middleware may make changes to the following elements of the HTTP message.
+Middleware will make changes to the following elements of the HTTP message.
 
 - HTTP Headers
   - Access-Control-Allow-Origin
@@ -222,6 +236,8 @@ If the request is not a CORS preflight request, `next` will execute.
 
 ### CORS preflight options
 
+`preflight` accept following options:
+
 | Name         | Type               | Description                     |
 | ------------ | ------------------ | ------------------------------- |
 | allowMethods | `string[]`         | `Access-Control-Allow-Methods`  |
@@ -229,13 +245,15 @@ If the request is not a CORS preflight request, `next` will execute.
 | maxAge       | `number`           | `Access-Control-Max-Age`        |
 | status       | `200` &#124; `204` | Preflight response status code. |
 
+and [CORS request options](#cors-request-options) without `exposeHeaders`.
+
 #### AllowMethods
 
-The value of `allowMethods` will serialize and added to the response as an ACAM
-(`Access-Control-Allow-Methods`) header.
+The value of `allowMethods` will serialize and added to the response as an
+`Access-Control-Allow-Methods` header.
 
-If not specified, ACRM (`Access-Control-Request-Method`) will add as ACAM to the
-response.
+If not specified, `Access-Control-Request-Method` header will add as
+`Access-Control-Allow-Methods` header to the response.
 
 ```ts
 import { preflight } from "https://deno.land/x/cors_middleware@$VERSION/middleware.ts";
@@ -254,11 +272,11 @@ Vary: origin, access-control-request-method, access-control-request-headers
 
 #### AllowHeaders
 
-The value of `allowHeaders` will serialize and added to the response as an ACAH
-(`Access-Control-Allow-Headers`) header.
+The value of `allowHeaders` will serialize and added to the response as an
+`Access-Control-Allow-Headers` header.
 
-If not specified, ACRH (`Access-Control-Request-Headers`) will add as ACAH to
-the response.
+If not specified, `Access-Control-Request-Headers` will add as
+`Access-Control-Allow-Headers` header to the response.
 
 ```ts
 import { preflight } from "https://deno.land/x/cors_middleware@$VERSION/middleware.ts";
@@ -277,8 +295,8 @@ Vary: origin, access-control-request-method, access-control-request-headers
 
 #### MaxAge
 
-The value of `maxAge` will serialize and added to the response as an ACMA
-(`Access-Control-Max-Age`) header.
+The value of `maxAge` will serialize and added to the response as an
+`Access-Control-Max-Age` header.
 
 ```ts
 import { preflight } from "https://deno.land/x/cors_middleware@$VERSION/middleware.ts";
