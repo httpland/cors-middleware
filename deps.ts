@@ -2,6 +2,8 @@
 // This module is browser compatible.
 
 export { isString } from "https://deno.land/x/isx@1.3.0/is_string.ts";
+export { isNumber } from "https://deno.land/x/isx@1.3.0/is_number.ts";
+export { isNonNegativeInteger } from "https://deno.land/x/isx@1.3.0/number/is_non_negative_integer.ts";
 export { Method } from "https://deno.land/x/http_utils@1.0.0/method.ts";
 export { withHeader } from "https://deno.land/x/http_utils@1.0.0/message.ts";
 export {

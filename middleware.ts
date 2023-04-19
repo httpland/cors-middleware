@@ -3,6 +3,7 @@ import {
   CORSHeader,
   createResponse,
   type Handler,
+  isNumber,
   isString,
   mergeHeaders,
   Method,
@@ -10,20 +11,14 @@ import {
   Status,
 } from "./deps.ts";
 import {
-  assertFieldNameFormat,
+  assertNonNegativeInteger,
+  assertTokenFormat,
   isCORSPreflightRequest,
   isCORSRequest,
   match,
   stringifyInstancePath,
 } from "./utils.ts";
 import { Header } from "./constants.ts";
-
-const enum Char {
-  Star = "*",
-  Comma = ",",
-  Sp = " ",
-  Separator = `${Char.Comma}${Char.Sp}`,
-}
 
 export interface CORSOptions extends CORSResponseHeaders {
   readonly exposeHeaders?: readonly string[];
@@ -49,19 +44,14 @@ export interface CORSPreflightResponseHeaders extends CORSResponseHeaders {
  */
 export function cors(options: CORSOptions = {}): Middleware {
   const { allowOrigins = Char.Star, allowCredentials, exposeHeaders } = options;
-  const instanceName = stringifyInstancePath.bind(null, "exposeHeaders");
+
+  exposeHeaders?.forEach(
+    createAssertTokens(Property.ExposeHeaders, ABNF.FieldName),
+  );
+
   const matchOrigin = allowOrigins === Char.Star
     ? undefined
     : createOriginMatcher(allowOrigins);
-
-  function assertExposeHeader(input: string, i: number): asserts input {
-    assertFieldNameFormat(
-      input,
-      `${instanceName(i)} is invalid <field-name> format. "${input}"`,
-    );
-  }
-
-  exposeHeaders?.forEach(assertExposeHeader);
 
   return _cors.bind(null, {
     matchOrigin,
@@ -147,6 +137,18 @@ export function preflight(options: PreflightOptions = {}): Middleware {
     maxAge,
     status = Status.NoContent,
   } = options;
+
+  isNumber(maxAge) &&
+    assertNonNegativeInteger(
+      maxAge,
+      `${Property.MaxAge} must be non-negative integer. ${maxAge}`,
+    );
+
+  allowHeaders?.forEach(
+    createAssertTokens(Property.AllowHeaders, ABNF.FieldName),
+  );
+  allowMethods?.forEach(createAssertTokens(Property.AllowMethods, ABNF.Method));
+
   const allowHeadersValue = allowHeaders?.join(Char.Separator);
   const allowMethodsValue = allowMethods?.join(Char.Separator);
   const matchOrigin = allowOrigins === Char.Star
@@ -231,4 +233,34 @@ export async function _preflight(
   }
 
   return new Response(null, { status, headers });
+}
+
+const enum Char {
+  Star = "*",
+  Comma = ",",
+  Sp = " ",
+  Separator = `${Char.Comma}${Char.Sp}`,
+}
+
+const enum Property {
+  AllowHeaders = "allowHeaders",
+  AllowMethods = "allowMethods",
+  ExposeHeaders = "exposeHeaders",
+  MaxAge = "maxAge",
+}
+
+const enum ABNF {
+  FieldName = "<field-name>",
+  Method = "<method>",
+}
+
+function createAssertTokens(subject: string, expected: string) {
+  return (input: string, i: number): asserts input => {
+    assertTokenFormat(
+      input,
+      `${
+        stringifyInstancePath(subject, i)
+      } is invalid ${expected} format. "${input}"`,
+    );
+  };
 }

@@ -1,8 +1,15 @@
-import { _cors, _preflight, cors, preflight } from "./middleware.ts";
+import {
+  _cors,
+  _preflight,
+  cors,
+  preflight,
+  type PreflightOptions,
+} from "./middleware.ts";
 import {
   assert,
   assertIsError,
   assertSpyCalls,
+  assertThrows,
   CORSHeader,
   describe,
   equalsResponse,
@@ -571,5 +578,19 @@ describe("preflight", () => {
         true,
       ),
     );
+  });
+
+  it("should throw error", () => {
+    const table: PreflightOptions[] = [
+      { maxAge: -1 },
+      { maxAge: NaN },
+      { maxAge: 1.1 },
+      { allowHeaders: [""] },
+      { allowMethods: [""] },
+    ];
+
+    table.forEach((options) => {
+      assertThrows(() => preflight(options));
+    });
   });
 });
