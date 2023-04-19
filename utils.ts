@@ -17,8 +17,8 @@ export function isCORSRequest(
 export function isCORSPreflightRequest(
   request: Request,
 ): boolean {
-  return isCORSRequest(request) &&
-    request.method === Method.Options &&
+  return request.method === Method.Options &&
+    isCORSRequest(request) &&
     request.headers.has(CORSHeader.AccessControlRequestMethod) &&
     request.headers.has(CORSHeader.AccessControlRequestHeaders);
 }
@@ -30,6 +30,7 @@ export function assertTokenFormat(input: string, msg?: string): asserts input {
   if (!reToken.test(input)) throw Error(msg);
 }
 
+/** Serialize instance path. */
 export function stringifyInstancePath(
   ...paths: readonly (string | number)[]
 ): string {
@@ -57,4 +58,18 @@ export function assertNonNegativeInteger(
   msg?: string,
 ): asserts input {
   if (!isNonNegativeInteger(input)) throw Error(msg);
+}
+
+/** Create {@link Response} from response. */
+export function fromResponse(
+  response: Response,
+  init?: ResponseInit,
+): Response {
+  const { body, headers, status, statusText } = response;
+
+  return new Response(body, {
+    headers: init?.headers ?? headers,
+    status: init?.status ?? status,
+    statusText: init?.statusText ?? statusText,
+  });
 }

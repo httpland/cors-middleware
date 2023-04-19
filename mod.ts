@@ -8,3 +8,4 @@ export {
   preflight,
   type PreflightOptions,
 } from "./middleware.ts";
+export { type Handler, type Middleware } from "./deps.ts";

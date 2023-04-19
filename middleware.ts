@@ -1,7 +1,9 @@
+// Copyright 2023-latest the httpland authors. All rights reserved. MIT license.
+// This module is browser compatible.
+
 import {
   append,
   CORSHeader,
-  createResponse,
   type Handler,
   isNumber,
   isString,
@@ -13,6 +15,7 @@ import {
 import {
   assertNonNegativeInteger,
   assertTokenFormat,
+  fromResponse,
   isCORSPreflightRequest,
   isCORSRequest,
   match,
@@ -24,7 +27,7 @@ import { Header } from "./constants.ts";
 export interface CORSHeaders {
   /** Allowed origin list.
    * - `*` - Add `Access-Control-Allow-Origin`: `*`
-   * - list - Compare with `Origin`. If match, add `Access-Control-Allow-Origin`: `Origin` value, otherwise; null
+   * - list - Compare with `Origin`. If match, add `Access-Control-Allow-Origin`: Origin field value, otherwise; null
    * @default "*"
    */
   readonly allowOrigins?: "*" | readonly (string | RegExp)[];
@@ -32,19 +35,28 @@ export interface CORSHeaders {
   /** `Access-Control-Allow-Credentials`. */
   readonly allowCredentials?: true | "true";
 
-  /** `Access-Control-Expose-Headers`. */
+  /** `Access-Control-Expose-Headers`.
+   * Each element must be [`<field-name>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1-2).
+   */
   readonly exposeHeaders?: readonly string[];
 }
 
+/** Headers for CORS preflight request. */
 export interface CORSPreflightHeaders
   extends Omit<CORSHeaders, "exposeHeaders"> {
-  /** `Access-Control-Allow-Methods`. */
+  /** `Access-Control-Allow-Methods`.
+   * Each element must be [`<method>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1-4).
+   */
   readonly allowMethods?: readonly string[];
 
-  /** `Access-Control-Allow-Headers`. */
+  /** `Access-Control-Allow-Headers`.
+   * Each element must be [`<field-name>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1-2).
+   */
   readonly allowHeaders?: readonly string[];
 
-  /** `Access-Control-Max-Age`. */
+  /** `Access-Control-Max-Age`.
+   * Must be non-negative integer.
+   */
   readonly maxAge?: number;
 }
 
@@ -89,13 +101,6 @@ export function cors(options: CORSHeaders = {}): Middleware {
   });
 }
 
-function createOriginMatcher(
-  allowOrigins: readonly (string | RegExp)[],
-): (origin: string) => boolean {
-  return (origin: string) =>
-    allowOrigins.some((pattern) => match(origin, pattern));
-}
-
 /**
  * @internal
  */
@@ -116,7 +121,7 @@ export async function _cors(
     new Headers({ [Header.Vary]: finalVary }),
   );
 
-  if (!isCORSRequest(request)) return createResponse(response, { headers });
+  if (!isCORSRequest(request)) return fromResponse(response, { headers });
 
   const { matchOrigin, allowCredentials, exposeHeaders } = context;
   const origin = request.headers.get(Header.Origin);
@@ -136,9 +141,10 @@ export async function _cors(
 
   const finalHeaders = mergeHeaders(left, headers);
 
-  return createResponse(response, { headers: finalHeaders });
+  return fromResponse(response, { headers: finalHeaders });
 }
 
+/** Preflight middleware options. */
 export interface PreflightOptions extends CORSPreflightHeaders {
   /** Preflight response status code.
    * @default 204
@@ -241,13 +247,12 @@ export async function _preflight(
     const response = await next(request);
     const varyValue = response.headers.get(Header.Vary) ?? "";
     const finalVary = append(varyValue, varyCandidates);
-
     const headers = mergeHeaders(
       response.headers,
       new Headers({ [Header.Vary]: finalVary }),
     );
 
-    return createResponse(response, { headers });
+    return fromResponse(response, { headers });
   }
 
   const {
@@ -325,4 +330,11 @@ function createAssertTokens(subject: string, expected: string) {
       } is invalid ${expected} format. "${input}"`,
     );
   };
+}
+
+function createOriginMatcher(
+  allowOrigins: readonly (string | RegExp)[],
+): (origin: string) => boolean {
+  return (origin: string) =>
+    allowOrigins.some((pattern) => match(origin, pattern));
 }
