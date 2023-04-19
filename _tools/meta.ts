@@ -3,6 +3,9 @@ import { BuildOptions } from "https://deno.land/x/dnt@0.34.0/mod.ts";
 export const makeOptions = (version: string): BuildOptions => ({
   test: false,
   shims: {},
+  compilerOptions: {
+    lib: ["dom", "esnext", "dom.iterable"],
+  },
   typeCheck: true,
   entryPoints: ["./mod.ts"],
   outDir: "./npm",
