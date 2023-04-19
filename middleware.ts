@@ -20,29 +20,58 @@ import {
 } from "./utils.ts";
 import { Header } from "./constants.ts";
 
-export interface CORSOptions extends CORSResponseHeaders {
-  readonly exposeHeaders?: readonly string[];
-}
-
-export interface CORSResponseHeaders {
-  /**
+/** Headers for CORS request. */
+export interface CORSHeaders {
+  /** Allowed origin list.
+   * - `*` - Add `Access-Control-Allow-Origin`: `*`
+   * - list - Compare with `Origin`. If match, add `Access-Control-Allow-Origin`: `Origin` value, otherwise; null
    * @default "*"
    */
   readonly allowOrigins?: "*" | readonly (string | RegExp)[];
+
+  /** `Access-Control-Allow-Credentials`. */
   readonly allowCredentials?: true | "true";
+
+  /** `Access-Control-Expose-Headers`. */
+  readonly exposeHeaders?: readonly string[];
 }
 
-export interface CORSPreflightResponseHeaders extends CORSResponseHeaders {
+export interface CORSPreflightHeaders
+  extends Omit<CORSHeaders, "exposeHeaders"> {
+  /** `Access-Control-Allow-Methods`. */
   readonly allowMethods?: readonly string[];
+
+  /** `Access-Control-Allow-Headers`. */
   readonly allowHeaders?: readonly string[];
+
+  /** `Access-Control-Max-Age`. */
   readonly maxAge?: number;
 }
 
 /** Create CORS request middleware.
  *
- * @throws {Error} If the {@link CORSOptions.exposeHeaders} includes invalid member.
+ * @example
+ * ```ts
+ * import {
+ *   cors,
+ *   type Handler,
+ * } from "https://deno.land/x/corp_middleware@$VERSION/mod.ts";
+ * import { assert } from "https://deno.land/std/testing/asserts.ts";
+ *
+ * const middleware = cors();
+ * const corsRequest = new Request("test:", {
+ *   headers: { origin: "<origin>" },
+ * });
+ * declare const handler: Handler;
+ *
+ * const response = await middleware(corsRequest, handler);
+ *
+ * assert(response.headers.has("access-control-allow-origin"));
+ * ```
+ *
+ * @throws {Error} If the {@link CORSHeaders.exposeHeaders} includes invalid member.
  */
-export function cors(options: CORSOptions = {}): Middleware {
+export function cors(options: CORSHeaders = {}): Middleware {
   const { allowOrigins = Char.Star, allowCredentials, exposeHeaders } = options;
 
   exposeHeaders?.forEach(
@@ -72,7 +101,7 @@ function createOriginMatcher(
  */
 export async function _cors(
   context: Readonly<
-    { [k in keyof Omit<CORSOptions, "allowOrigins">]?: string } & {
+    { [k in keyof Omit<CORSHeaders, "allowOrigins">]?: string } & {
       matchOrigin?: (origin: string) => boolean;
     }
   >,
@@ -110,16 +139,7 @@ export async function _cors(
   return createResponse(response, { headers: finalHeaders });
 }
 
-export function getAllowedOrigin(
-  origin: string,
-  check: ((origin: string) => boolean) | undefined,
-): string {
-  if (!check) return Char.Star;
-
-  return check(origin) ? origin : "";
-}
-
-export interface PreflightOptions extends CORSPreflightResponseHeaders {
+export interface PreflightOptions extends CORSPreflightHeaders {
   /** Preflight response status code.
    * @default 204
    */
@@ -127,6 +147,8 @@ export interface PreflightOptions extends CORSPreflightResponseHeaders {
 }
 
 /** Create middleware for CORS preflight request.
+ *
+ * @throws {Error} If the options include invalid member.
  */
 export function preflight(options: PreflightOptions = {}): Middleware {
   const {
@@ -174,7 +196,7 @@ const varyCandidates = [
 export async function _preflight(
   context: Readonly<
     & {
-      [k in keyof Omit<CORSPreflightResponseHeaders, "allowOrigins">]?: string;
+      [k in keyof Omit<CORSPreflightHeaders, "allowOrigins">]?: string;
     }
     & { matchOrigin?: (origin: string) => boolean }
     & { status?: Status.OK | Status.NoContent }
@@ -252,6 +274,15 @@ const enum Property {
 const enum ABNF {
   FieldName = "<field-name>",
   Method = "<method>",
+}
+
+export function getAllowedOrigin(
+  origin: string,
+  check: ((origin: string) => boolean) | undefined,
+): string {
+  if (!check) return Char.Star;
+
+  return check(origin) ? origin : "";
 }
 
 function createAssertTokens(subject: string, expected: string) {
