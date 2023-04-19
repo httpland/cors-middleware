@@ -35,16 +35,3 @@ export function mergeHeaders(left: Headers, right: Headers): Headers {
 
   return left;
 }
-
-export function createResponse(
-  response: Response,
-  init?: ResponseInit,
-): Response {
-  const { body, headers, status, statusText } = response;
-
-  return new Response(body, {
-    headers: init?.headers ?? headers,
-    status: init?.status ?? status,
-    statusText: init?.statusText ?? statusText,
-  });
-}

@@ -58,3 +58,17 @@ export function assertNonNegativeInteger(
 ): asserts input {
   if (!isNonNegativeInteger(input)) throw Error(msg);
 }
+
+/** Create {@link Response} from response. */
+export function fromResponse(
+  response: Response,
+  init?: ResponseInit,
+): Response {
+  const { body, headers, status, statusText } = response;
+
+  return new Response(body, {
+    headers: init?.headers ?? headers,
+    status: init?.status ?? status,
+    statusText: init?.statusText ?? statusText,
+  });
+}
