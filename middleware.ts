@@ -148,6 +148,39 @@ export interface PreflightOptions extends CORSPreflightHeaders {
 
 /** Create middleware for CORS preflight request.
  *
+ * @example
+ * ```ts
+ * import {
+ *   type Handler,
+ *   preflight,
+ * } from "https://deno.land/x/cors_middleware@$VERSION/mod.ts";
+ * import {
+ *   assert,
+ *   assertSpyCalls,
+ *   spy,
+ * } from "https://deno.land/std/testing/asserts.ts";
+ *
+ * const corsPreflightRequest = new Request("test:", {
+ *   method: "OPTIONS",
+ *   headers: {
+ *     origin: "<origin>",
+ *     "access-control-request-method": "POST",
+ *     "access-control-request-headers": "content-type",
+ *   },
+ * });
+ *
+ * const next: Handler = spy(() => new Response());
+ * const handlePreflight = preflight();
+ * const response = await handlePreflight(corsPreflightRequest, next);
+ *
+ * assertSpyCalls(next, 0);
+ * assert(response.headers.status === 204);
+ * assert(response.headers.has("access-control-allow-origin"));
+ * assert(response.headers.has("access-control-allow-methods"));
+ * assert(response.headers.has("access-control-allow-headers"));
+ * assert(response.headers.has("vary"));
+ * ```
+ *
  * @throws {Error} If the options include invalid member.
  */
 export function preflight(options: PreflightOptions = {}): Middleware {
