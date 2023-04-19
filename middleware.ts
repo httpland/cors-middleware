@@ -27,7 +27,7 @@ import { Header } from "./constants.ts";
 export interface CORSHeaders {
   /** Allowed origin list.
    * - `*` - Add `Access-Control-Allow-Origin`: `*`
-   * - list - Compare with `Origin`. If match, add `Access-Control-Allow-Origin`: `Origin` value, otherwise; null
+   * - list - Compare with `Origin`. If match, add `Access-Control-Allow-Origin`: Origin field value, otherwise; null
    * @default "*"
    */
   readonly allowOrigins?: "*" | readonly (string | RegExp)[];
@@ -35,19 +35,27 @@ export interface CORSHeaders {
   /** `Access-Control-Allow-Credentials`. */
   readonly allowCredentials?: true | "true";
 
-  /** `Access-Control-Expose-Headers`. */
+  /** `Access-Control-Expose-Headers`.
+   * Each element must be [`<field-name>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1-2).
+   */
   readonly exposeHeaders?: readonly string[];
 }
 
 export interface CORSPreflightHeaders
   extends Omit<CORSHeaders, "exposeHeaders"> {
-  /** `Access-Control-Allow-Methods`. */
+  /** `Access-Control-Allow-Methods`.
+   * Each element must be [`<method>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1-4).
+   */
   readonly allowMethods?: readonly string[];
 
-  /** `Access-Control-Allow-Headers`. */
+  /** `Access-Control-Allow-Headers`.
+   * Each element must be [`<field-name>`](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1-2).
+   */
   readonly allowHeaders?: readonly string[];
 
-  /** `Access-Control-Max-Age`. */
+  /** `Access-Control-Max-Age`.
+   * Must be non-negative integer.
+   */
   readonly maxAge?: number;
 }
 
