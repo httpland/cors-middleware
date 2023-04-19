@@ -55,7 +55,7 @@ export interface CORSPreflightHeaders
  * import {
  *   cors,
  *   type Handler,
- * } from "https://deno.land/x/corp_middleware@$VERSION/mod.ts";
+ * } from "https://deno.land/x/cors_middleware@$VERSION/mod.ts";
  * import { assert } from "https://deno.land/std/testing/asserts.ts";
  *
  * const middleware = cors();
@@ -154,11 +154,8 @@ export interface PreflightOptions extends CORSPreflightHeaders {
  *   type Handler,
  *   preflight,
  * } from "https://deno.land/x/cors_middleware@$VERSION/mod.ts";
- * import {
- *   assert,
- *   assertSpyCalls,
- *   spy,
- * } from "https://deno.land/std/testing/asserts.ts";
+ * import { assert } from "https://deno.land/std/testing/asserts.ts";
+ * import { assertSpyCalls, spy } from "https://deno.land/std/testing/mock.ts";
  *
  * const corsPreflightRequest = new Request("test:", {
  *   method: "OPTIONS",
@@ -169,12 +166,13 @@ export interface PreflightOptions extends CORSPreflightHeaders {
  *   },
  * });
  *
- * const next: Handler = spy(() => new Response());
+ * declare const handler: Handler;
+ * const next = spy(handler);
  * const handlePreflight = preflight();
  * const response = await handlePreflight(corsPreflightRequest, next);
  *
  * assertSpyCalls(next, 0);
- * assert(response.headers.status === 204);
+ * assert(response.status === 204);
  * assert(response.headers.has("access-control-allow-origin"));
  * assert(response.headers.has("access-control-allow-methods"));
  * assert(response.headers.has("access-control-allow-headers"));
