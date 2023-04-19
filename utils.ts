@@ -17,8 +17,8 @@ export function isCORSRequest(
 export function isCORSPreflightRequest(
   request: Request,
 ): boolean {
-  return isCORSRequest(request) &&
-    request.method === Method.Options &&
+  return request.method === Method.Options &&
+    isCORSRequest(request) &&
     request.headers.has(CORSHeader.AccessControlRequestMethod) &&
     request.headers.has(CORSHeader.AccessControlRequestHeaders);
 }

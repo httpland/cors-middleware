@@ -244,7 +244,6 @@ export async function _preflight(
     const response = await next(request);
     const varyValue = response.headers.get(Header.Vary) ?? "";
     const finalVary = append(varyValue, varyCandidates);
-
     const headers = mergeHeaders(
       response.headers,
       new Headers({ [Header.Vary]: finalVary }),
