@@ -30,6 +30,7 @@ export function assertTokenFormat(input: string, msg?: string): asserts input {
   if (!reToken.test(input)) throw Error(msg);
 }
 
+/** Serialize instance path. */
 export function stringifyInstancePath(
   ...paths: readonly (string | number)[]
 ): string {

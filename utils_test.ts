@@ -1,5 +1,12 @@
-import { fromResponse } from "./utils.ts";
-import { assert, describe, equalsResponse, it, Status } from "./_dev_deps.ts";
+import { fromResponse, stringifyInstancePath } from "./utils.ts";
+import {
+  assert,
+  assertEquals,
+  describe,
+  equalsResponse,
+  it,
+  Status,
+} from "./_dev_deps.ts";
 
 describe("fromResponse", () => {
   it("should return new response what change partial properties", async () => {
@@ -44,5 +51,21 @@ describe("fromResponse", () => {
         true,
       ),
     );
+  });
+});
+
+describe("stringifyInstancePath", () => {
+  const table: [(number | string)[], string][] = [
+    [[], ""],
+    [["a"], "a"],
+    [["a", 0], "a[0]"],
+    [["a", 0, "b", 1], "a[0].b[1]"],
+    [[0], "0"],
+    [[0, 0, 0], "0[0][0]"],
+    [[0, "0", 0, "0"], "0.0[0].0"],
+  ];
+
+  table.forEach(([input, expected]) => {
+    assertEquals(stringifyInstancePath(...input), expected);
   });
 });
