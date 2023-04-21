@@ -49,11 +49,12 @@ export const makeOptions = (version: string): BuildOptions => ({
       version: "1.3.0",
       subPath: "is_number.js",
     },
-    "https://deno.land/x/isx@1.3.0/number/is_non_negative_integer.ts": {
-      name: "@miyauci/isx",
-      version: "1.3.0",
-      subPath: "number/is_non_negative_integer.js",
-    },
+    "https://deno.land/x/assertion@1.0.0/number/assert_non_negative_integer.ts":
+      {
+        name: "@miyauci/assertion",
+        version: "1.0.0",
+        subPath: "number/assert_non_negative_integer.js",
+      },
     "https://deno.land/x/http_middleware@1.0.0/mod.ts": {
       name: "@httpland/http-middleware",
       version: "1.0.0",

@@ -1,7 +1,7 @@
 // Copyright 2023-latest the httpland authors. All rights reserved. MIT license.
 // This module is browser compatible.
 
-import { CORSHeader, isNonNegativeInteger, isString, Method } from "./deps.ts";
+import { CORSHeader, isString, Method } from "./deps.ts";
 import { Header } from "./constants.ts";
 import { reToken } from "./_abnf.ts";
 
@@ -48,16 +48,6 @@ export function match(input: string, pattern: string | RegExp): boolean {
   if (isString(pattern)) return input === pattern;
 
   return pattern.test(input);
-}
-
-/** Assert the input is non-negative integer.
- * @throws {Error} If the input is not non-negative integer.
- */
-export function assertNonNegativeInteger(
-  input: number,
-  msg?: string,
-): asserts input {
-  if (!isNonNegativeInteger(input)) throw Error(msg);
 }
 
 /** Create {@link Response} from response. */
