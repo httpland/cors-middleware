@@ -3,7 +3,6 @@
 
 export { isString } from "https://deno.land/x/isx@1.3.0/is_string.ts";
 export { isNumber } from "https://deno.land/x/isx@1.3.0/is_number.ts";
-export { isNonNegativeInteger } from "https://deno.land/x/isx@1.3.0/number/is_non_negative_integer.ts";
 export { Method } from "https://deno.land/x/http_utils@1.0.0/method.ts";
 export { withHeader } from "https://deno.land/x/http_utils@1.0.0/message.ts";
 export {
@@ -12,6 +11,7 @@ export {
 } from "https://deno.land/x/http_middleware@1.0.0/mod.ts";
 export { Status } from "https://deno.land/std@0.184.0/http/http_status.ts";
 export { append } from "https://deno.land/x/vary@1.0.0/mod.ts";
+export { assertNonNegativeInteger } from "https://deno.land/x/assertion@1.0.0/number/assert_non_negative_integer.ts";
 
 const ACCESS_CONTROL = "access-control";
 

@@ -3,6 +3,7 @@
 
 import {
   append,
+  assertNonNegativeInteger,
   CORSHeader,
   type Handler,
   isNumber,
@@ -13,7 +14,6 @@ import {
   Status,
 } from "./deps.ts";
 import {
-  assertNonNegativeInteger,
   assertTokenFormat,
   fromResponse,
   isCORSPreflightRequest,
